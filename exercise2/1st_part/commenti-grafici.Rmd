@@ -13,6 +13,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, echo=F, message=F}
 library(ggplot2)
 data <- read.delim2("DATA-HPC.dat")
+data_NONE <- read.table("~/HPC-testing/exercise2/1st_part/HPC_DATA_PART1.dat", quote="\"", comment.char="")
+colnames(data_NONE) <- c("DIM", "TIME", "GFLOPS", "PRECISION", "POLICY", "SYNTH", "LIBRARY")
+
+data_NONE <- rbind(data[-4], data_NONE[-2])
 ```
 
 
@@ -142,7 +146,8 @@ For matrices that have less than $8000$ elements each, the number of $GFLOPS$ un
 The first, obvious consideration that we can make is that the choice of using single or double precision numbers to express matrices elements is determinant in terms of achieved performances: by using single precision both for OpenBLAS and MKL we can observe more than $2$ times the performances than we could have in double precision. This factor increases even to $3$ or more in some small (i.e. under $8.000$) matrices cases.
 
 ```{r, echo=FALSE}
-subset05 <- data[c(1:38, 77:114),]
+# OpenBLAS on EPYC
+subset05 <- data_NONE[c(1:38, 77:114, 153:190, 229:266),]
 
 plot05 <- ggplot(subset05, aes(x=DIM,y=GFLOPS, color=SYNTH)) + geom_line() + geom_point()
 plot05 + ggtitle("OpenBLAS comparisons: different precisions and allocation policies") +
@@ -153,14 +158,21 @@ In both precisions, OpenBLAS seems to work better with CLOSE allocation policy, 
 
 
 ```{r, echo=FALSE}
-subset06 <- data[c(39:76, 115:152),]
+# MKL on EPYC
+subset06 <- data_NONE[c(39:76, 115:152, 191:228, 267:304),]
 
 plot06 <- ggplot(subset06, aes(x=DIM,y=GFLOPS, color=SYNTH)) + geom_line() + geom_point()
 plot06 + ggtitle("MKL comparisons: different precisions and allocation policies") +
   xlab("Matrix Size") + ylab("GFLOPS") + scale_y_continuous(breaks=seq(0,3000,200)) + scale_x_continuous(breaks=seq(0,20000,2000))
-
 ```
 
 On the opposite, in MKL it seems that SPREAD allocation policy is the best option. 
+
+
+
+
+
+
+
 
 
