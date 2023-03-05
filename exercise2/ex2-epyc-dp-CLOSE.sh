@@ -11,12 +11,12 @@ module load mkl
 module load openBLAS/0.3.21-omp
 
 export OMP_PLACES=core
-export OMP_PROC_BIND=close
+export OMP_PROC_BIND=none
 export OMP_NUM_THREADS=64
 
 for size in {2000..20000..1000}
 do
         for i in {1..10}
-                do ./gemm_oblas.x $size $size $size | grep GFLOPS >> ex2-epyc-oblas-dp-CLOSE.dat
+                do ./gemm_oblas_SP.x $size $size $size | grep GFLOPS >> ex2-epyc-oblas-sp-NONE.dat
         done
 done
