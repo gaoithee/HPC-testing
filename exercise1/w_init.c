@@ -32,7 +32,7 @@ void initialize_serial(const char* filename, unsigned char * world, long size){
 }
 
 
-void initialize_parallel(const char* filename, unsigned char * world, long size, int pSize, int pRank){
+void initialize_parallel(const char* filename, unsigned char * process_world, long size, int pSize, int pRank){
     
     //for example if we have size=10 and pSize=3, the work (i.e. rows) subdivision would be 4-3-3
     long smaller_size = size%pSize < pRank? size/pSize +1 : size/pSize;
@@ -40,16 +40,16 @@ void initialize_parallel(const char* filename, unsigned char * world, long size,
     //size = number of columns, 
     //smaller_size = number of rows that each process need to analyze
     //smaller_size+2 = overall number of rows that each process receive -> one extra row above, one below
-    process_world = (unsigned char *)malloc(size*(smaller_size+2)*sizeof(unsigned char));
+   process_world = (unsigned char *)malloc(size*(smaller_size+2)*sizeof(unsigned char));
 
     //SUCH AS THE SERIAL VERSION:
-    for(long long i=0; i<size*size; i++){
+    for(long long i=size; i<size*smaller_size; i++){
         
         int val = rand()%100;
         if(val>50){
-            world[i]=0; //white = dead
+            process_world[i]=0; //white = dead
         }else{
-            world[i]=MAXVAL; //black = alive
+            process_world[i]=MAXVAL; //black = alive
         }
     }
 
@@ -66,8 +66,7 @@ void initialize_parallel(const char* filename, unsigned char * world, long size,
 }
 
 void choose_initialization(const char * filename, long size, int * argc, char ** argv[]){
-    int rank, size;  
-  
+    int pRank, pSize; 
     MPI_Status status;
     MPI_Request req;
 
@@ -75,11 +74,12 @@ void choose_initialization(const char * filename, long size, int * argc, char **
     MPI_Comm_rank(MPI_COMM_WORLD, &pRank);
     MPI_Comm_size(MPI_COMM_WORLD, &pSize);
     unsigned char * world;
-    
     if(pSize > 1){
-        initialize_parallel(world, size, pSize, pRank);
+	printf("parallelo\n");
+        initialize_parallel(filename, world, size, pSize, pRank);
     }else{
-        initialize_serial(world, size);
+	printf("seriale\n");
+        initialize_serial(filename, world, size);
   }
 
   MPI_Finalize();

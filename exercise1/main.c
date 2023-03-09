@@ -3,7 +3,7 @@
 #include <time.h>
 #include <omp.h>
 #include <getopt.h>
-
+#include <mpi.h>
 
 //functions:
 void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char *image_name);
@@ -118,7 +118,8 @@ int main(int argc, char * argv[]){
     if(action == INIT){
         printf("Initialize matrix\n");
         printf("Overall number of elements = %ld\n", k*k);
-        choose_initialization(filename, world, &argc, &argv);
+	printf("qua ci sono\n");
+        choose_initialization(filename, size, &argc, &argv);
     }
 
 
