@@ -63,16 +63,16 @@ void initialize_parallel(const char* filename, unsigned char * world, long size,
 //printf("\n");
 
 printf("qua dovrei scrivere\n");
-//MPI_Gatherv(process_world, rcounts[pRank], MPI_UNSIGNED_CHAR, world, rcounts, displs,MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+MPI_Gatherv(process_world, rcounts[pRank], MPI_UNSIGNED_CHAR, world, rcounts, displs, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
-    free(process_world);
+   free(process_world);
 }
 
 void choose_initialization(const char * filename, long size, int * argc, char ** argv[]){
     int pRank, pSize; 
     MPI_Status status;
     MPI_Request req;
-unsigned char* world = (unsigned char)malloc(size*size);
+unsigned char* world = (unsigned char*)malloc(size*size*sizeof(char));
 
     MPI_Init(argc, argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &pRank);
@@ -131,14 +131,14 @@ printf("[proc %d]: dopo il broadcast, ho %d e %d\n", pRank, *rcounts, *displs);
 
 if(pSize > 1){
 	printf("parallelo\n");
-//        initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
-//	if(pRank==0){
+        initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
+	if(pRank==0){
 //		MPI_Barrier(MPI_COMM_WORLD);
 //		write_pgm_image(world, MAXVAL, size, size, filename);
-//	}
+	}
 }else{
 	printf("seriale\n");
-//        initialize_serial(filename, world, size);
+        initialize_serial(filename, world, size);
   }
 
   MPI_Finalize();
