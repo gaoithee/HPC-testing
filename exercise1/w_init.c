@@ -80,13 +80,21 @@ void choose_initialization(const char * filename, long size, int * argc, char **
 
 
 //here the determination of rcounts and displs:
-int* displs = (int *)malloc(size*sizeof(int)); 
-int* rcounts = (int *)malloc(size*sizeof(int)); 
+    int* displs = (int *)malloc(size*sizeof(int)); 
+    int* rcounts = (int *)malloc(size*sizeof(int)); 
 
+    
+int cumul = 0;
+for(int i=0; i < pSize; i++){
+    int smaller_size = size%pSize < pRank? size/pSize +1 : size/pSize;
+    cumul = smaller_size;
+    rcounts[i] = smaller_size;
+    displs[i] = cumul;
+}
 
-    if(pSize > 1){
+if(pSize > 1){
 	printf("parallelo\n");
-        initialize_parallel(filename, world, size, pSize, pRank);
+        initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
 	if(rank==0){
 		write_pgm_image(world, MAXVAL, size, size, filename);
 	}
