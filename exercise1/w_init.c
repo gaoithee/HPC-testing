@@ -32,7 +32,7 @@ void initialize_serial(const char* filename, unsigned char * world, long size){
 }
 
 
-void initialize_parallel(const char* filename, unsigned char * process_world, long size, int pSize, int pRank){
+void initialize_parallel(const char* filename, unsigned char * world, long size, int pSize, int pRank, int* rcounts, int* displs){
     
     //for example if we have size=10 and pSize=3, the work (i.e. rows) subdivision would be 4-3-3
     long smaller_size = size%pSize < pRank? size/pSize +1 : size/pSize;
@@ -40,10 +40,11 @@ void initialize_parallel(const char* filename, unsigned char * process_world, lo
     //size = number of columns, 
     //smaller_size = number of rows that each process need to analyze
     //smaller_size+2 = overall number of rows that each process receive -> one extra row above, one below
-   process_world = (unsigned char *)malloc(size*(smaller_size+2)*sizeof(unsigned char));
+   unsigned char * process_world = (unsigned char *)malloc(size*smaller_size*sizeof(unsigned char));
+
 
     //SUCH AS THE SERIAL VERSION:
-    for(long long i=size; i<size*smaller_size; i++){
+    for(long long i=0; i<size*smaller_size; i++){
         
         int val = rand()%100;
         if(val>50){
@@ -53,14 +54,16 @@ void initialize_parallel(const char* filename, unsigned char * process_world, lo
         }
     }
 
-    for(int k=0; k<size*size; k++){
-        printf("%d ", process_world[k]);
-        if(k%size==0){
-            printf("\n");
-        }
-    }
+    //for(int k=0; k<size*size; k++){
+       // printf("%d ", process_world[k]);
+       // if(k%size==0){
+         //   printf("\n");
+        //}
+    //}
+//printf("\n");
 
-    write_pgm_image(process_world, MAXVAL, size, size, filename);
+printf("qua dovrei scrivere\n");
+MPI_Gatherv(process_world, size*smaller_size, MPI_UNSIGNED_CHAR, world, rcounts, displs, MPI_COMM_WORLD);
 
     free(process_world);
 }
@@ -73,11 +76,21 @@ void choose_initialization(const char * filename, long size, int * argc, char **
     MPI_Init(argc, argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &pRank);
     MPI_Comm_size(MPI_COMM_WORLD, &pSize);
-    unsigned char * world;
+    unsigned char * world = (unsigned char)malloc(size*size);
+
+
+//here the determination of rcounts and displs:
+int* displs = (int *)malloc(size*sizeof(int)); 
+int* rcounts = (int *)malloc(size*sizeof(int)); 
+
+
     if(pSize > 1){
 	printf("parallelo\n");
         initialize_parallel(filename, world, size, pSize, pRank);
-    }else{
+	if(rank==0){
+		write_pgm_image(world, MAXVAL, size, size, filename);
+	}
+}else{
 	printf("seriale\n");
         initialize_serial(filename, world, size);
   }
