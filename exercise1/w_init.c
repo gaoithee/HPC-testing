@@ -112,7 +112,6 @@ printf("%d %d\n", size*size, cumulative);
 MPI_Bcast(rcounts, pSize, MPI_LONG, 0, MPI_COMM_WORLD);
 MPI_Bcast(displs, pSize, MPI_LONG, 0, MPI_COMM_WORLD);
 
-
 //l'idea qua è di fare calcolare a un solo processo tutte ste cose in modo da evitare comunicazioni tra processi
 //perché qua pRank è diverso per ogni processo
 
@@ -145,9 +144,9 @@ printf("processo %d ha %d come rcounts\n", pRank, rcounts[i]);
 }
         initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
 printf("processo %d è arrivato con %d elementi\n", pRank, rcounts[pRank]);
-MPI_Barrier(MPI_COMM_WORLD);
+//MPI_Wait(&req, MPI_STATUS_IGNORE);
 	if(pRank==0){
-		//write_pgm_image(world, MAXVAL, size, size, filename);
+		write_pgm_image(world, MAXVAL, size, size, filename);
 	}
 }else{
 	printf("seriale\n");

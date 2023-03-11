@@ -83,18 +83,64 @@ void grw_serial_static(unsigned char* world, long size, int times, int snap){
     }
 }
 
-void run_static(char * filename, int times, int dump, int * argc, char ** argv[]){
-  
 
-  unsigned char * world;
-  int size = 0;
-  int maxval = 0; 
+void grw_parallel_static(unsigned char* world, int size, int pSize, int pRank, int* scounts, int* displs, int times, int snap){
+    unsigned char* new_world = (unsigned char *)malloc(scounts[pRank]*sizeof(unsigned char));
+	unsigned char* temp_new_world = (unsigned char *)malloc(scounts[pRank]*sizeof(unsigned char));
+    MPI_Scatterv(world, scounts, displs, MPI_UNSIGNED_CHAR, new_world, scounts[pRank], MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+
+printf("questo arriva al processo %d \n", pRank);
+	for(int k=0; k<scounts[pRank]; k++){
+		printf("%d ", new_world[k]);
+	}
+printf("\n");
+ for(int i=0; i<times; i++){
+       if(i%2==0){
+           evaluate_world(new_world, temp_new_world, size); 
+        }else{
+           evaluate_world(temp_new_world, new_world, size);
+        }
+
+       if(i%snap==0){
+		printf("QUA devo tornare al processo 0");
+   //         char * fname = (char*)malloc(60);
+   //         sprintf(fname, "snap/image_STATIC_%03d",i);
+
+        //we print ONLY these images
+     //           write_pgm_image(world, MAXVAL, size, size, fname);
+//            free(fname);
+     }
+
+   }
+}
+
+
+void run_static(char * filename, int times, int dump, int * argc, char ** argv[]){
+
+unsigned char* world;
+int size=0;
+int maxval=0;
+int snap=0;
+
+int pRank, pSize;
+MPI_Status status;
+MPI_Init(argc, argv);
+MPI_Comm_rank(MPI_COMM_WORLD, &pRank);
+MPI_Comm_size(MPI_COMM_WORLD, &pSize);  
+ 
   
   //first of all, i need to read the previous world state
-  printf("tutto bene \n");
-  printf("controllino: %p, %p, %p, %d, %s \n", &world, &maxval, &size, size, filename);
+//  printf("tutto bene \n");
+  //printf("controllino: %p, %p, %p, %d, %s \n", &world, &maxval, &size, size, filename);
+
+
+
   //lettura in seriale:
   read_pgm_image(&world, &maxval, &size, &size, filename);
+
+
+    int* displs = (int *)malloc(pSize*sizeof(int)); 
+    int* scounts = (int *)malloc(pSize*sizeof(int)); 
 
 //mondo temporaneo che contiene anche le due righe di contorno
   unsigned char* temp_world = (unsigned char *)malloc(size*(size+2)*sizeof(unsigned char));
@@ -103,24 +149,66 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
     if(i>= size & i<size*(size+1)){
         temp_world[i] = world[i];
     }else if(i<size){
-        temp_world[i] = world[size*(size-1)+i];
+	temp_world[i]=world[size*(size-1)+i];
+        //temp_world[i] = world[size*(size-1)+i];
     }else{
-        temp_world[size*(size+1)+i];
+	temp_world[i]=world[i-size*(size+1)];
+        //temp_world[size*(size+1)+i]=world[i];
     }
-    printf("%d\n", temp_world[i]);
+    //printf("%d\n", temp_world[i]);
   }
+//printf("guarda qua\n");
+int smaller_size;
+int cumulative=0;
 
 
 
 
-    //int pRank, pSize; 
-    //MPI_Status status;
-    //MPI_Request req;
+if(pRank==0){
+printf("matrice generata:\n");
+for(int k=0; k<size*(size+2); k++){  
+        printf("%d ", temp_world[k]);
+}
+printf("\n");
 
-//si inizializza una regione parallela così divido il mondo in fasce e ciascun processo se ne gestisce una:
-    //MPI_Init(argc, argv);
-    //MPI_Comm_rank(MPI_COMM_WORLD, &pRank);
-    //MPI_Comm_size(MPI_COMM_WORLD, &pSize);
+	for(int i=0; i<pSize; i++){
+		smaller_size = size%pSize <= i? size/pSize: size/pSize+1;
+		scounts[i]=(smaller_size+2)*size;
+		displs[i]=cumulative;
+		cumulative = cumulative+(scounts[i]-2*size);
+		printf("%d, %d\n", scounts[i], displs[i]);				
+	}
+	printf("%d %d\n", size*(size+2), cumulative);
+}
+
+MPI_Bcast(scounts, pSize, MPI_INT,0, MPI_COMM_WORLD);
+MPI_Bcast(displs, pSize, MPI_INT, 0, MPI_COMM_WORLD);
+
+
+if(pSize > 1){
+//	printf("parallelo\n");
+	for(int i=0; i<pSize; i++){
+//        printf("processo %d ha %d come rcounts\n", pRank, scounts[i]);
+	grw_parallel_static(temp_world, size, pSize, pRank, scounts, displs, times, snap);
+    }
+    
+    //initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
+    //printf("processo %d è arrivato con %d elementi\n", pRank, rcounts[pRank]);
+    //MPI_Barrier(MPI_COMM_WORLD);
+	
+    //if(pRank==0){
+//		write_pgm_image(world, MAXVAL, size, size, filename);
+//	}
+    
+}else{
+	printf("seriale\n");
+  grw_serial_static(world, size, times, dump);
+
+}
+
+free(temp_world);
+
+
     
 //printf("ciao, sono %d\n", pRank);
 
@@ -147,22 +235,21 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
 
 
 
-  printf("ancora tutto bene \n");
+  //printf("ancora tutto bene \n");
 
-  printf("controllino #2: %p, %d, %d, %d\n", &world, size, times, dump);
+  //printf("controllino #2: %p, %d, %d, %d\n", &world, size, times, dump);
 
-  if(pSize>1){
-    printf("here we go parallel");
-  }else{
-    grw_serial_static(world, size, times, dump);
-  }
+//  if(pSize>1){
+//    printf("here we go parallel");
+//  }else{
+ //   grw_serial_static(world, size, times, dump);
+//  }
  
   
-  printf("\neccoci \n");
-
-
-
-  free(world);
+//  printf("\neccoci \n");
+//MPI_Finalize();
+free(world);
+MPI_Finalize();
 }
 
 

@@ -64,7 +64,7 @@ int main(int argc, char * argv[]){
 
 
     char *optstring = "irk:e:f:n:s:";
-    long size = SIZE;
+//    long size = SIZE;
 
 
     int c;
@@ -119,7 +119,7 @@ int main(int argc, char * argv[]){
         printf("Initialize matrix\n");
         printf("Overall number of elements = %ld\n", k*k);
 	printf("qua ci sono\n");
-        choose_initialization(filename, size, &argc, &argv);
+        choose_initialization(filename, k, &argc, &argv);
     }
 
 
