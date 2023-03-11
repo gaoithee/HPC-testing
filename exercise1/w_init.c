@@ -69,6 +69,7 @@ MPI_Gatherv(process_world, rcounts[pRank], MPI_UNSIGNED_CHAR, world, rcounts, di
 }
 
 void choose_initialization(const char * filename, long size, int * argc, char ** argv[]){
+//printf("%d", size);
     int pRank, pSize; 
     MPI_Status status;
     MPI_Request req;
@@ -90,9 +91,9 @@ if(pRank==0){
 
 	for(int i=0; i<pSize; i++){
 		smaller_size = size%pSize <= i? size/pSize: size/pSize+1;
-		rcounts[i] = smaller_size*size*size;
+		rcounts[i] = smaller_size*size;
 		displs[i] = cumulative;
-		cumulative = cumulative+smaller_size*size*size;
+		cumulative = cumulative+smaller_size*size;
 		printf("%d, %d\n", rcounts[i], displs[i]);
 	}
 }
@@ -134,7 +135,7 @@ if(pSize > 1){
         initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
 	if(pRank==0){
 //		MPI_Barrier(MPI_COMM_WORLD);
-//		write_pgm_image(world, MAXVAL, size, size, filename);
+		write_pgm_image(world, MAXVAL, size, size, filename);
 	}
 }else{
 	printf("seriale\n");
