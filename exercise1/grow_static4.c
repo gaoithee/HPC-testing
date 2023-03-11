@@ -50,7 +50,7 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, long size){
             new_world[k] = 0;
         }
 
-        printf("%d\n", new_world[k]);
+//        printf("%d\n", new_world[k]);
 
     }
 
@@ -102,7 +102,7 @@ printf("\n");
         }
 
        if(i%snap==0){
-		printf("QUA devo tornare al processo 0");
+		printf("QUA devo tornare al processo 0\n");
    //         char * fname = (char*)malloc(60);
    //         sprintf(fname, "snap/image_STATIC_%03d",i);
 
@@ -120,7 +120,7 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
 unsigned char* world;
 int size=0;
 int maxval=0;
-int snap=0;
+//int snap=0;
 
 int pRank, pSize;
 MPI_Status status;
@@ -152,8 +152,8 @@ MPI_Comm_size(MPI_COMM_WORLD, &pSize);
 	temp_world[i]=world[size*(size-1)+i];
         //temp_world[i] = world[size*(size-1)+i];
     }else{
-	temp_world[i]=world[i-size*(size+1)];
-        //temp_world[size*(size+1)+i]=world[i];
+	temp_world[i] = 8;
+//	temp_world[i]=world[i-size*(size+1)];
     }
     //printf("%d\n", temp_world[i]);
   }
@@ -189,7 +189,7 @@ if(pSize > 1){
 //	printf("parallelo\n");
 	for(int i=0; i<pSize; i++){
 //        printf("processo %d ha %d come rcounts\n", pRank, scounts[i]);
-	grw_parallel_static(temp_world, size, pSize, pRank, scounts, displs, times, snap);
+	grw_parallel_static(temp_world, size, pSize, pRank, scounts, displs, times, dump);
     }
     
     //initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
