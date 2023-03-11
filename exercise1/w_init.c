@@ -32,8 +32,10 @@ void initialize_serial(const char* filename, unsigned char * world, long size){
 }
 
 
-void initialize_parallel(const char* filename, unsigned char * world, long size, int pSize, int pRank, int* rcounts, int* displs){
-    
+void initialize_parallel(const char* filename, unsigned char * world, long size, int pSize, int pRank, long* rcounts, long* displs){
+for(int i=0; i<pSize; i++){
+printf("rcounts del processo %d contiene gli elementi: %d\n", pRank, rcounts[i]);
+}    
     //for example if we have size=10 and pSize=3, the work (i.e. rows) subdivision would be 4-3-3
     //long smaller_size = size%pSize <= pRank? (long)(size/pSize) : (long)(size/pSize) +1;
 
@@ -62,9 +64,9 @@ void initialize_parallel(const char* filename, unsigned char * world, long size,
     //}
 //printf("\n");
 
-printf("qua dovrei scrivere\n");
+//printf("qua dovrei scrivere %d elementi\n", rcounts[pRank]);
 MPI_Gatherv(process_world, rcounts[pRank], MPI_UNSIGNED_CHAR, world, rcounts, displs, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
-
+printf("il processo %d ha inviato %d elementi al processo 0\n", pRank, rcounts[pRank]);
    free(process_world);
 }
 
@@ -81,8 +83,8 @@ unsigned char* world = (unsigned char*)malloc(size*size*sizeof(char));
 printf("ciao, sono %d\n", pRank);
 
 //here the determination of rcounts and displs:
-    long* displs = (int *)malloc(pSize*sizeof(long)); 
-    long* rcounts = (int *)malloc(pSize*sizeof(long)); 
+    long* displs = (long *)malloc(pSize*sizeof(long)); 
+    long* rcounts = (long *)malloc(pSize*sizeof(long)); 
 
 int smaller_size;
 int cumulative=0;
@@ -90,20 +92,26 @@ int cumulative=0;
 if(pRank==0){
 
 	for(int i=0; i<pSize; i++){
+		//numero di righe che ogni processo dovrà gestirsi
 		smaller_size = size%pSize <= i? size/pSize: size/pSize+1;
-		rcounts[i] = smaller_size*size;
-		displs[i] = cumulative;
-		cumulative = cumulative+smaller_size*size;
-		printf("%d, %d\n", rcounts[i], displs[i]);
-	}
-}
 
-printf("[proc %d]; prima del broadcast, ho %d e %d\n", pRank, *rcounts, *displs);
+		//numero di elementi che ogni processo dovrà gestirsi
+		rcounts[i] = smaller_size*size;
+
+		//indice del primo elemento che l'i-esimo processo deve inizializzare
+		displs[i] = cumulative;
+		
+		//aggiorno cumulative, che mi dice da quale elemento dovrà partire il processo successivo
+		cumulative = cumulative+rcounts[i];
+		printf("prima del broadcast, il processo 0 ha %d, %d\n", rcounts[i], displs[i]);
+	}
+printf("%d %d\n", size*size, cumulative);
+
+}
 
 MPI_Bcast(rcounts, pSize, MPI_LONG, 0, MPI_COMM_WORLD);
 MPI_Bcast(displs, pSize, MPI_LONG, 0, MPI_COMM_WORLD);
 
-printf("[proc %d]: dopo il broadcast, ho %d e %d\n", pRank, *rcounts, *displs);
 
 //l'idea qua è di fare calcolare a un solo processo tutte ste cose in modo da evitare comunicazioni tra processi
 //perché qua pRank è diverso per ogni processo
@@ -132,16 +140,20 @@ printf("[proc %d]: dopo il broadcast, ho %d e %d\n", pRank, *rcounts, *displs);
 
 if(pSize > 1){
 	printf("parallelo\n");
+	for(int i=0; i<pSize; i++){
+printf("processo %d ha %d come rcounts\n", pRank, rcounts[i]);
+}
         initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
+printf("processo %d è arrivato\n", pRank);
+MPI_Barrier(MPI_COMM_WORLD);
 	if(pRank==0){
-//		MPI_Barrier(MPI_COMM_WORLD);
 		write_pgm_image(world, MAXVAL, size, size, filename);
 	}
 }else{
 	printf("seriale\n");
         initialize_serial(filename, world, size);
   }
-
+MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
   free(world);
 }
