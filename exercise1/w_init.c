@@ -144,16 +144,16 @@ if(pSize > 1){
 printf("processo %d ha %d come rcounts\n", pRank, rcounts[i]);
 }
         initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
-printf("processo %d è arrivato\n", pRank);
+printf("processo %d è arrivato con %d elementi\n", pRank, rcounts[pRank]);
 MPI_Barrier(MPI_COMM_WORLD);
 	if(pRank==0){
-		write_pgm_image(world, MAXVAL, size, size, filename);
+		//write_pgm_image(world, MAXVAL, size, size, filename);
 	}
 }else{
 	printf("seriale\n");
         initialize_serial(filename, world, size);
   }
-MPI_Barrier(MPI_COMM_WORLD);
+//MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
   free(world);
 }
