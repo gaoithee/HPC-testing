@@ -4,7 +4,7 @@ INCDIR=include
 OBJDIR=obj
 
 RW=$(OBJDIR)/read_write_pgm2.o 
-INIT=$(OBJDIR)/w_init.o 
+INIT=$(OBJDIR)/w_init2.o 
 IT_STATIC=$(OBJDIR)/grow_static3.o 
 #IT_WAVE=$(OBJDIR)/iterate_wave.o
 IT_ORDERED=$(OBJDIR)/grow_ordered.o

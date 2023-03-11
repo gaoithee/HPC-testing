@@ -153,8 +153,7 @@ MPI_Barrier(MPI_COMM_WORLD);
 }else{
 	printf("seriale\n");
         initialize_serial(filename, world, size);
-  }
-//MPI_Barrier(MPI_COMM_WORLD);
+}
   MPI_Finalize();
   free(world);
 }
