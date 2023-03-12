@@ -39,7 +39,7 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, long size){
 
 
         SUM = SUM/MAXVAL; //number of (dead) elements that surround the selected cell
-        printf("%d ", SUM);
+//        printf("%d ", SUM);
 
         //dead if 1 or 0 cells alive in its neighbours (due to undercrowding) or if 
         //more than 3 cells alive in its neighbours (due to overcrowding)
@@ -61,7 +61,7 @@ void grw_serial_static(unsigned char* world, long size, int times, int snap){
 
     for(int i=0; i<size*size; i++){
         new_world[i] = world[i];
-        printf("%d", new_world[i]);
+//        printf("%d", new_world[i]);
     }
 
     for(int i=0; i<times; i++){
@@ -137,7 +137,9 @@ MPI_Comm_size(MPI_COMM_WORLD, &pSize);
 
   //lettura in seriale:
   read_pgm_image(&world, &maxval, &size, &size, filename);
-
+for(int k=0; k<size*size; k++){
+printf("%d ", world[k]);
+}
 
     int* displs = (int *)malloc(pSize*sizeof(int)); 
     int* scounts = (int *)malloc(pSize*sizeof(int)); 
@@ -147,13 +149,13 @@ MPI_Comm_size(MPI_COMM_WORLD, &pSize);
 
   for(int i=0; i<size*(size+2); i++){
     if(i>= size & i<size*(size+1)){
-        temp_world[i] = world[i];
+        temp_world[i] = world[i-size];
     }else if(i<size){
 	temp_world[i]=world[size*(size-1)+i];
         //temp_world[i] = world[size*(size-1)+i];
     }else{
-	temp_world[i] = 8;
-//	temp_world[i]=world[i-size*(size+1)];
+	//temp_world[i] = 8;
+	temp_world[i]=world[i-size*(size+1)];
     }
     //printf("%d\n", temp_world[i]);
   }

@@ -10,6 +10,10 @@ void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char 
 
 #define MAXVAL 255
 
+int generate_seed(int omp_rank, int mpi_rank){
+  return 2*omp_rank*mpi_rank+omp_rank*omp_rank+mpi_rank*mpi_rank+100;
+}
+
 
 void initialize_serial(const char* filename, unsigned char * world, long size){
     
@@ -44,17 +48,23 @@ printf("rcounts del processo %d contiene gli elementi: %d\n", pRank, rcounts[i])
     //smaller_size+2 = overall number of rows that each process receive -> one extra row above, one below
    unsigned char * process_world = (unsigned char *)malloc(rcounts[pRank]*sizeof(unsigned char));
 
+  #pragma omp parallel
+  {
+    //set seed
+    srand(generate_seed(pRank, omp_get_thread_num()));
 
+    #pragma omp for schedule(static)
     //SUCH AS THE SERIAL VERSION:
     for(long long i=0; i<rcounts[pRank]; i++){
         
         int val = rand()%100;
         if(val>50){
-            process_world[i]=0; //white = dead
+            process_world[i]=0; //black = dead
         }else{
-            process_world[i]=MAXVAL; //black = alive
+            process_world[i]=MAXVAL; //white = alive
         }
     }
+}
 
     //for(int k=0; k<size*size; k++){
        // printf("%d ", process_world[k]);
