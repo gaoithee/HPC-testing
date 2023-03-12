@@ -64,7 +64,7 @@ void evaluate_world_serial(unsigned char* world, unsigned char* new_world, long 
 }
 
 
-void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, long sizey, int times){ 
+void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, long sizey, int times, int pRank, int pSize, MPI_Status* status, MPI_Request* req){ 
     //funzione che usa world solo tramite lettura, per stabilire se aggiornare o meno new_world
 
     int SUM;
@@ -117,32 +117,32 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, 
     if(pRank == pSize-1){
 
     //cosa manda, quanti elementi, tipo elementi, processo a cui inviare, tag del messaggio, ...
-      MPI_Isend(&new_world[(sizey-2)*sizex], sizex, MPI_UNSIGNED_CHAR, 0, tag_even, MPI_COMM_WORLD, r);
-      MPI_Isend(&new_world[sizex], sizex, MPI_UNSIGNED_CHAR, pRank-1, tag_odd, MPI_COMM_WORLD, r);
+      MPI_Isend(&new_world[(sizey-2)*sizex], sizex, MPI_UNSIGNED_CHAR, 0, tag_even, MPI_COMM_WORLD, req);
+      MPI_Isend(&new_world[sizex], sizex, MPI_UNSIGNED_CHAR, pRank-1, tag_odd, MPI_COMM_WORLD, req);
       
-      MPI_Recv(new_world, sizex, MPI_UNSIGNED_CHAR, pRank-1, tag_even, MPI_COMM_WORLD, s);
-      MPI_Recv(&new_world[(sizey-1)*sizex], sizex, MPI_UNSIGNED_CHAR, 0, tag_odd, MPI_COMM_WORLD, s);
+      MPI_Recv(new_world, sizex, MPI_UNSIGNED_CHAR, pRank-1, tag_even, MPI_COMM_WORLD, status);
+      MPI_Recv(&new_world[(sizey-1)*sizex], sizex, MPI_UNSIGNED_CHAR, 0, tag_odd, MPI_COMM_WORLD, status);
     }
 
 
     if(pRank == 0){
     
     //cosa manda, quanti elementi, tipo elementi, processo a cui inviare, tag del messaggio, ...
-      MPI_Isend(&new_world[(sizey-2)*sizex], sizex, MPI_UNSIGNED_CHAR, 1, tag_even, MPI_COMM_WORLD, r);
-      MPI_Isend(&new_world[sizex], sizex, MPI_UNSIGNED_CHAR, pSize-1, tag_odd, MPI_COMM_WORLD, r);
+      MPI_Isend(&new_world[(sizey-2)*sizex], sizex, MPI_UNSIGNED_CHAR, 1, tag_even, MPI_COMM_WORLD, req);
+      MPI_Isend(&new_world[sizex], sizex, MPI_UNSIGNED_CHAR, pSize-1, tag_odd, MPI_COMM_WORLD, req);
 
     //cosa riceve, quanti elementi, tipo elementi, processo da cui riceve, tag del messaggio, ... 
-      MPI_Recv(new_world, sizex, MPI_UNSIGNED_CHAR, pSize-1, tag_even, MPI_COMM_WORLD, s);
-      MPI_Recv(&new_world[(sizey-1)*sizex], sizex, MPI_UNSIGNED_CHAR, 1, tag_odd, MPI_COMM_WORLD, s);
+      MPI_Recv(new_world, sizex, MPI_UNSIGNED_CHAR, pSize-1, tag_even, MPI_COMM_WORLD, status);
+      MPI_Recv(&new_world[(sizey-1)*sizex], sizex, MPI_UNSIGNED_CHAR, 1, tag_odd, MPI_COMM_WORLD, status);
     }
 
     if(pRank != 0 & pRank != pSize-1){
 
-      MPI_Isend(&new_world[(sizey-2)*sizex], sizex, MPI_UNSIGNED_CHAR, pRank+1, tag_even, MPI_COMM_WORLD, r);
-      MPI_Isend(&new_world[sizex], sizex, MPI_UNSIGNED_CHAR, pRank-1, tag_odd, MPI_COMM_WORLD, r);
+      MPI_Isend(&new_world[(sizey-2)*sizex], sizex, MPI_UNSIGNED_CHAR, pRank+1, tag_even, MPI_COMM_WORLD, req);
+      MPI_Isend(&new_world[sizex], sizex, MPI_UNSIGNED_CHAR, pRank-1, tag_odd, MPI_COMM_WORLD, req);
 
-      MPI_Recv(&new_world[(sizey-1)*sizex], sizex, MPI_UNSIGNED_CHAR, pRank+1, tag_odd, MPI_COMM_WORLD, s);
-      MPI_Recv(new_world, sizex, MPI_UNSIGNED_CHAR, pRank-1, tag_even, MPI_COMM_WORLD, s);
+      MPI_Recv(&new_world[(sizey-1)*sizex], sizex, MPI_UNSIGNED_CHAR, pRank+1, tag_odd, MPI_COMM_WORLD, status);
+      MPI_Recv(new_world, sizex, MPI_UNSIGNED_CHAR, pRank-1, tag_even, MPI_COMM_WORLD, status);
     }
 }
 
@@ -179,9 +179,9 @@ void grw_serial_static(unsigned char* world, long size, int snap, int times){
 }
 
 
-void grw_parallel_static(unsigned char* world, int size, int pSize, int pRank, int* scounts, int* displs, 
-                        int* rcounts_g, int* displs_g, int snap, int times){
-
+void grw_parallel_static(unsigned char* world, int size, int pSize, int pRank, int* scounts, int* displs, int* rcounts_g, int* displs_g, int snap, int times){
+    MPI_Status status;
+    MPI_Request req;
 
     //mondi locali, ausiliari, di ogni processo
     //new_world raccoglie l'esito di Scatterv, temp_new_world è il mondo che ci permette di fare lo switch come in seriale
@@ -205,9 +205,9 @@ void grw_parallel_static(unsigned char* world, int size, int pSize, int pRank, i
 
         //OTTIMIZZABILE tramite puntatori
         if(i%2==0){
-           evaluate_world(new_world, temp_new_world, size, (long)scounts[pRank]/size, times); 
+           evaluate_world(new_world, temp_new_world, size, (long)scounts[pRank]/size, times, pRank, pSize, &status, &req); 
         }else{
-           evaluate_world(temp_new_world, new_world, size, (long)scounts[pRank]/size, times);
+           evaluate_world(temp_new_world, new_world, size, (long)scounts[pRank]/size, times, pRank, pSize, &status, &req);
         }
 
        if(i%snap==0){
@@ -260,7 +260,6 @@ int maxval=0;
 //int snap=0;
 
 int pRank, pSize;
-MPI_Status status;
 MPI_Init(argc, argv);
 MPI_Comm_rank(MPI_COMM_WORLD, &pRank);
 MPI_Comm_size(MPI_COMM_WORLD, &pSize);  
@@ -373,7 +372,7 @@ MPI_Bcast(displs_g, pSize, MPI_INT, 0, MPI_COMM_WORLD);
 
 
 if(pSize > 1){
-	grw_parallel_static(temp_world, size, pSize, pRank, scounts, displs, dump, times); 
+	grw_parallel_static(temp_world, size, pSize, pRank, scounts, displs, rcounts_g, displs_g, dump, times); 
     
 }else{
     grw_serial_static(world, size, dump, times);
