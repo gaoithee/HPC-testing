@@ -18,24 +18,25 @@ void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, co
 #define CPU_TIME (clock_gettime( CLOCK_MONOTONIC, &ts ), (double)ts.tv_sec +	\
 		  (double)ts.tv_nsec * 1e-9)
 
-void evaluate_world(unsigned char* world, unsigned char* new_world, long size){ 
+void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, long sizey){ 
     int SUM;
 
-    for(long k=0; k<size*size; k++){
+    for(long k=0; k<sizex*sizey; k++){
+	print("%d\n", world[k]);
 
-        long row = k/size;
-      long col = k%size;
+        long row = k/sizex;
+      long col = k%sizey;
 
         SUM = 0;
 
-       SUM = world[(size+row-1)%size*size + (size+col-1)%size] 
-            + world[(size+row+0)%size*size + (size+col-1)%size] 
-            + world[(size+row+1)%size*size + (size+col-1)%size] 
-            + world[(size+row-1)%size*size + (size+col+0)%size] 
-            + world[(size+row+1)%size*size + (size+col+0)%size] 
-            + world[(size+row-1)%size*size + (size+col+1)%size] 
-            + world[(size+row+0)%size*size + (size+col+1)%size] 
-            + world[(size+row+1)%size*size + (size+col+1)%size];
+       SUM = world[(sizex+row-1)%sizex*sizex + (sizey+col-1)%sizey] 
+            + world[(sizex+row+0)%sizex*sizex + (sizey+col-1)%sizey] 
+            + world[(sizex+row+1)%sizex*sizex + (sizey+col-1)%sizey] 
+            + world[(sizex+row-1)%sizex*sizex + (sizey+col+0)%sizey] 
+            + world[(sizex+row+1)%sizex*sizex + (sizey+col+0)%sizey] 
+            + world[(sizex+row-1)%sizex*sizex + (sizey+col+1)%sizey] 
+            + world[(sizex+row+0)%sizex*sizex + (sizey+col+1)%sizey] 
+            + world[(sizex+row+1)%sizex*sizex + (sizey+col+1)%sizey];
 
 
         SUM = SUM/MAXVAL; //number of (dead) elements that surround the selected cell
@@ -53,7 +54,6 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, long size){
 //        printf("%d\n", new_world[k]);
 
     }
-
 }
 
 void grw_serial_static(unsigned char* world, long size, int times, int snap){
@@ -66,9 +66,9 @@ void grw_serial_static(unsigned char* world, long size, int times, int snap){
 
     for(int i=0; i<times; i++){
         if(i%2==0){
-            evaluate_world(world, new_world, size); 
+            evaluate_world(world, new_world, size, size); 
         }else{
-            evaluate_world(new_world, world, size);
+            evaluate_world(new_world, world, size, size);
         }
 
         if(i%snap==0){
@@ -80,13 +80,17 @@ void grw_serial_static(unsigned char* world, long size, int times, int snap){
             free(fname);
         }
 
+
     }
+free(new_world);
 }
 
 
 void grw_parallel_static(unsigned char* world, int size, int pSize, int pRank, int* scounts, int* displs, int times, int snap){
+
     unsigned char* new_world = (unsigned char *)malloc(scounts[pRank]*sizeof(unsigned char));
 	unsigned char* temp_new_world = (unsigned char *)malloc(scounts[pRank]*sizeof(unsigned char));
+
     MPI_Scatterv(world, scounts, displs, MPI_UNSIGNED_CHAR, new_world, scounts[pRank], MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
 printf("questo arriva al processo %d \n", pRank);
@@ -96,9 +100,11 @@ printf("questo arriva al processo %d \n", pRank);
 printf("\n");
  for(int i=0; i<times; i++){
        if(i%2==0){
-           evaluate_world(new_world, temp_new_world, size); 
+//printf("l'errore è qui\n");
+           evaluate_world(new_world, temp_new_world, size, (long)scounts[pRank]/size); 
         }else{
-           evaluate_world(temp_new_world, new_world, size);
+//printf("l'errore è qui #2\n");
+           evaluate_world(temp_new_world, new_world, size, (long)scounts[pRank]/size);
         }
 
        if(i%snap==0){
@@ -112,6 +118,8 @@ printf("\n");
      }
 
    }
+free(new_world);
+free(temp_new_world);
 }
 
 
@@ -189,10 +197,10 @@ MPI_Bcast(displs, pSize, MPI_INT, 0, MPI_COMM_WORLD);
 
 if(pSize > 1){
 //	printf("parallelo\n");
-	for(int i=0; i<pSize; i++){
+//	for(int i=0; i<pSize; i++){
 //        printf("processo %d ha %d come rcounts\n", pRank, scounts[i]);
 	grw_parallel_static(temp_world, size, pSize, pRank, scounts, displs, times, dump);
-    }
+  //  }
     
     //initialize_parallel(filename, world, size, pSize, pRank, rcounts, displs);
     //printf("processo %d è arrivato con %d elementi\n", pRank, rcounts[pRank]);
