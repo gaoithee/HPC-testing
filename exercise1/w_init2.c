@@ -23,10 +23,10 @@ void initialize_serial(const char* filename, unsigned char * world, long size){
     for(long long i=0; i<size*size; i++){
         
         int val = rand()%100;
-        if(val>50){
-            world[i]=0; //white = dead
+        if(val>70){
+            world[i]=MAXVAL; //white = dead
         }else{
-            world[i]=MAXVAL; //black = alive
+            world[i]=0; //black = alive
         }
     }
 

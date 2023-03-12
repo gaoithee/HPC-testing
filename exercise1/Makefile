@@ -5,7 +5,7 @@ OBJDIR=obj
 
 RW=$(OBJDIR)/read_write_pgm2.o 
 INIT=$(OBJDIR)/w_init2.o 
-IT_STATIC=$(OBJDIR)/grow_static4.o 
+IT_STATIC=$(OBJDIR)/grow_static5.o 
 #IT_WAVE=$(OBJDIR)/iterate_wave.o
 IT_ORDERED=$(OBJDIR)/grow_ordered.o
 OBJECTS=main.o $(RW) $(INIT) $(IT_ORDERED) $(IT_STATIC)

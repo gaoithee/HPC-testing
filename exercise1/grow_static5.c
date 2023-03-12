@@ -29,7 +29,7 @@ void evaluate_world_serial(unsigned char* world, unsigned char* new_world, long 
     for(long k=0; k<sizex*sizey; k++){
 
         //solo per controllo
-	    print("%d\n", world[k]);
+	    printf("%d\n", world[k]);
 
         //determiniamo il numero di riga e di colonna in cui siamo
         long row = k/sizex;
@@ -72,7 +72,7 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, 
     for(long k=0; k<sizex*sizey; k++){
 
         //solo per controllo
-	    print("%d\n", world[k]);
+	    printf("%d\n", world[k]);
 
         //determiniamo il numero di riga e di colonna in cui siamo
         long row = k/sizex;
